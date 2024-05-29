@@ -1,6 +1,14 @@
 #!/bin/bash
 set -e
 
+sed -e "s/'localhost';/'$OBSERVIUM_DB_HOST';/g" \
+    -e "s/'USERNAME';/'$OBSERVIUM_DB_USER';/g" \
+    -e "s/'PASSWORD';/'$OBSERVIUM_DB_PASS';/g" \
+    -e "s/'observium';/'$OBSERVIUM_DB_NAME';/g" \
+    -e "\$ a \$config['base_url'] = '$OBSERVIUM_BASE_URL';" \
+    /opt/observium/config.php.default > /opt/observium/config.php
+
+
 until mysql -h $OBSERVIUM_DB_HOST -u root -p$MYSQL_ROOT_PASSWORD -e "SHOW DATABASES;"; do
   >&2 echo "MariaDB is unavailable - sleeping"
   sleep 5

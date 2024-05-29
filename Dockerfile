@@ -1,6 +1,11 @@
 FROM ubuntu:22.04
 
 ARG FETCH_VERSION=latest
+ARG OBSERVIUM_DB_HOST=mariadb
+ARG OBSERVIUM_DB_NAME=observium
+ARG OBSERVIUM_DB_USER=observium
+ARG OBSERVIUM_DB_PASS=passw0rd
+ARG OBSERVIUM_BASE_URL=http://localhost:80
 
 LABEL maintainer="oabaiadze@gmail.com"
 LABEL version="1.7"
@@ -44,9 +49,7 @@ RUN apt update && \
                     ipmitool \
                     graphviz \
                     imagemagick \
-                    python3-mysqldb \
-                    python3-pymysql \
-                    python-is-python3 && \
+                    python3-pip && \
     apt clean && \
     rm -f /etc/nginx/sites-enabled/default
 
@@ -58,22 +61,20 @@ RUN mkdir -p /opt/observium /opt/observium/logs /opt/observium/rrd && \
     tar -zxvf /opt/observium-community-${FETCH_VERSION}.tar.gz -C /opt && \
     rm /opt/observium-community-${FETCH_VERSION}.tar.gz
 
-RUN sed -e "s/= 'localhost';/= 'mariadb';/g" \
-        -e "s/= 'USERNAME';/= 'observium';/g"  \
-        -e "s/= 'PASSWORD';/= 'passw0rd';/g"  \
-        -e "s/= 'observium';/= 'observium';/g" \
-        -e "$ a \$config['base_url'] = 'http://localhost:8888';" \
-        /opt/observium/config.php.default > /opt/observium/config.php
-
 COPY observium-init.sh /opt/observium/observium-init.sh
 RUN chmod +x /opt/observium/observium-init.sh
 
 COPY nginx.conf /etc/nginx/nginx.conf
 COPY observium /etc/nginx/sites-available/observium
 
+# Update php-fpm.conf to use TCP socket
 RUN sed -i 's|listen = /run/php/php8.1-fpm.sock|listen = 127.0.0.1:9000|' /etc/php/8.1/fpm/pool.d/www.conf
 
 COPY supervisord.conf /etc/supervisord.conf
+
+# Install latest versions of specific packages using pip
+RUN pip install --upgrade pip && \
+    pip install PyMySQL cryptography
 
 WORKDIR /opt/observium
 
