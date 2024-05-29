@@ -1,0 +1,35 @@
+version: '3.8'
+
+services:
+  observium:
+    build: .
+    container_name: observium
+    env_file:
+      - .env
+    volumes:
+      - observium-logs:/opt/observium/logs
+      - observium-rrd:/opt/observium/rrd
+    depends_on:
+      - mariadb
+    networks:
+      - observium-network
+    ports:
+      - "8888:80"
+
+  mariadb:
+    image: mariadb:latest
+    container_name: mariadb
+    env_file:
+      - .env
+    volumes:
+      - mariadb-data:/var/lib/mysql
+    networks:
+      - observium-network
+
+volumes:
+  observium-logs:
+  observium-rrd:
+  mariadb-data:
+
+networks:
+  observium-network:
